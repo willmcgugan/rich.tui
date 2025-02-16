@@ -12,6 +12,7 @@ from typing_extensions import Literal
 
 from textual import events
 from textual.strip import Strip
+from textual.widgets.input import Selection
 
 if TYPE_CHECKING:
     pass
@@ -200,7 +201,7 @@ class _Template(Validator):
             cursor_position += 1
         return value, cursor_position
 
-    def insert_text_at_cursor(self, text: str) -> str | None:
+    def insert_text_at_cursor(self, text: str) -> tuple[str, int] | None:
         """Inserts `text` at current cursor position. If not present in `text`, any expected separator is automatically
         inserted at the correct position.
 
@@ -256,15 +257,17 @@ class _Template(Validator):
             value, cursor_position = self.insert_separators(value, cursor_position)
         return value, cursor_position
 
-    def move_cursor(self, delta: int) -> None:
+    def move_cursor(self, delta: int, select: bool = False) -> None:
         """Moves the cursor position by `delta` characters, skipping separators if
         running over them.
 
         Args:
             delta: The number of characters to move; positive moves right, negative
                 moves left.
+            select: If `True`, select the text between the old and new cursor positions.
         """
         cursor_position = self.input.cursor_position
+        start, end = self.input.selection
         if delta < 0 and all(
             [
                 (_CharFlags.SEPARATOR in char_definition.flags)
@@ -279,7 +282,11 @@ class _Template(Validator):
             and (_CharFlags.SEPARATOR in self.template[cursor_position].flags)
         ):
             cursor_position += delta
-        self.input.cursor_position = cursor_position
+
+        if select:
+            self.input.selection = Selection(start, cursor_position)
+        else:
+            self.input.cursor_position = cursor_position
 
     def delete_at_position(self, position: int | None = None) -> None:
         """Deletes character at `position`.
@@ -473,6 +480,7 @@ class MaskedInput(Input, can_focus=True):
                 which determine when to do input validation. The default is to do
                 validation for all messages.
             valid_empty: Empty values are valid.
+            select_on_focus: Whether to select all text on focus.
             name: Optional name for the masked input widget.
             id: Optional ID for the widget.
             classes: Optional initial classes for the widget.
@@ -569,12 +577,19 @@ class MaskedInput(Input, can_focus=True):
             if char == " ":
                 result.stylize(style, index, index + 1)
 
-        if self._cursor_visible and self.has_focus:
-            if self._cursor_at_end:
-                result.pad_right(1)
-            cursor_style = self.get_component_rich_style("input--cursor")
-            cursor = self.cursor_position
-            result.stylize(cursor_style, cursor, cursor + 1)
+        if self.has_focus:
+            if not self.selection.is_empty:
+                start, end = self.selection
+                start, end = sorted((start, end))
+                selection_style = self.get_component_rich_style("input--selection")
+                result.stylize_before(selection_style, start, end)
+
+            if self._cursor_visible:
+                cursor_style = self.get_component_rich_style("input--cursor")
+                cursor = self.cursor_position
+                if self._cursor_at_end:
+                    result.pad_right(1)
+                result.stylize(cursor_style, cursor, cursor + 1)
 
         segments = list(result.render(self.app.console))
         line_length = Segment.get_line_length(segments)
@@ -614,19 +629,31 @@ class MaskedInput(Input, can_focus=True):
         """Clear the masked input."""
         self.value, self.cursor_position = self._template.insert_separators("", 0)
 
-    def action_cursor_left(self) -> None:
-        """Move the cursor one position to the left; separators are skipped."""
-        self._template.move_cursor(-1)
+    def action_cursor_left(self, select: bool = False) -> None:
+        """Move the cursor one position to the left; separators are skipped.
 
-    def action_cursor_right(self) -> None:
-        """Move the cursor one position to the right; separators are skipped."""
-        self._template.move_cursor(1)
+        Args:
+            select: If `True`, select the text to the left of the cursor.
+        """
+        self._template.move_cursor(-1, select=select)
 
-    def action_home(self) -> None:
-        """Move the cursor to the start of the input."""
-        self._template.move_cursor(-len(self.template))
+    def action_cursor_right(self, select: bool = False) -> None:
+        """Move the cursor one position to the right; separators are skipped.
 
-    def action_cursor_left_word(self) -> None:
+        Args:
+            select: If `True`, select the text to the right of the cursor.
+        """
+        self._template.move_cursor(1, select=select)
+
+    def action_home(self, select: bool = False) -> None:
+        """Move the cursor to the start of the input.
+
+        Args:
+            select: If `True`, select the text between the old and new cursor positions.
+        """
+        self._template.move_cursor(-len(self.template), select=select)
+
+    def action_cursor_left_word(self, select: bool = False) -> None:
         """Move the cursor left next to the previous separator. If no previous
         separator is found, moves the cursor to the start of the input."""
         if self._template.at_separator(self.cursor_position - 1):
@@ -637,7 +664,7 @@ class MaskedInput(Input, can_focus=True):
             position += 1
         self.cursor_position = position or 0
 
-    def action_cursor_right_word(self) -> None:
+    def action_cursor_right_word(self, select: bool = False) -> None:
         """Move the cursor right next to the next separator. If no next
         separator is found, moves the cursor to the end of the input."""
         position = self._template.next_separator_position()
