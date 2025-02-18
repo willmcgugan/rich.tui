@@ -19,10 +19,13 @@ You can follow these steps:
 
  1. Make sure you have Poetry installed ([see instructions here](https://python-poetry.org))
  2. Clone the Textual repository
- 3. Run `poetry shell` to create a virtual environment for the dependencies
- 4. Run `make setup` to install all dependencies
- 5. Make sure the latest version of Textual was installed by running the command `textual --version`
- 6. Install the pre-commit hooks with the command `pre-commit install`
+ 3. Run `cd textual` to make textual your current working directory
+ 4. Run `python -m venv .venv` to create a new python virtual environment
+ 5. Run `source .venv/bin/activate` to activate the virtual environment
+ 6. Run `python -m pip install poetry` to install poetry
+ 7. Run `make setup` to install all dependencies
+ 8. Make sure the latest version of Textual was installed by running the command `textual --version`
+ 9. Install the pre-commit hooks with the command `pre-commit install`
 
 ([Read this](#makefile-commands) if the command `make` doesn't work for you.)
 
