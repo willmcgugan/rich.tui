@@ -385,7 +385,10 @@ def render_border_label(
         assert False
 
     if (flip_top and is_title) or (flip_bottom and not is_title):
-        base_style = base_style.without_color + Style(reverse=True)
+        base_style = base_style.without_color + Style(
+            background=base_style.foreground,
+            foreground=base_style.background,
+        )
 
     segments = text_label.render_segments(base_style)
     yield from segments

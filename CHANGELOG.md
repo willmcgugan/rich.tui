@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 - Fixed height of auto container which contains auto height children https://github.com/Textualize/textual/pull/5552
 - Fixed `Content.from_markup` not stripping control codes https://github.com/Textualize/textual/pull/5557
 - Fixed `delta_x` and `delta_y` in mouse events when smooth scrolling is enabled https://github.com/Textualize/textual/pull/5556
+- Fixed flipped title colors in panel border https://github.com/Textualize/textual/issues/5548
 
 ### Added
 

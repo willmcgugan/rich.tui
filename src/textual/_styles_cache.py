@@ -379,7 +379,11 @@ class StylesCache:
                         if label_background.a
                         else TRANSPARENT
                     ),
-                    (base_label_background + border_color + label_color),
+                    (
+                        (base_label_background + label_color)
+                        if label_color.a
+                        else TRANSPARENT
+                    ),
                 )
                 render_label = (label, style)
 

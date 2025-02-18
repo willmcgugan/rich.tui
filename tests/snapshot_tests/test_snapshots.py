@@ -3720,3 +3720,50 @@ def test_auto_in_auto(snap_compare):
             table.add_rows(rows[1:])
 
     assert snap_compare(MyApp())
+
+
+def test_panel_border_title_colors(snap_compare):
+    """Regression test for https://github.com/Textualize/textual/issues/5548
+
+    You should see four labels with panel type borders. The border title colors
+    should match the description in the label."""
+
+    class BorderTitleApp(App):
+        CSS = """
+        Label {
+            border: panel red;
+            width: 40;
+            margin: 1;
+        }
+
+        .with-border-title-color {
+            border-title-color: yellow;
+        }
+
+        .with-border-title-background {
+            border-title-background: green;
+        }
+        """
+
+        def compose(self) -> ComposeResult:
+            yield Label(
+                "with default",
+            )
+            yield Label(
+                "with yellow color",
+                classes="with-border-title-color",
+            )
+            yield Label(
+                "with green background",
+                classes="with-border-title-background",
+            )
+            yield Label(
+                "with yellow color and green background",
+                classes="with-border-title-background with-border-title-color",
+            )
+
+        def on_mount(self) -> None:
+            for label in self.query(Label):
+                label.border_title = "Border title"
+
+    assert snap_compare(BorderTitleApp())
