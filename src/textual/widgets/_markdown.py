@@ -20,6 +20,7 @@ from textual._slug import TrackedSlugs
 from textual.app import ComposeResult
 from textual.await_complete import AwaitComplete
 from textual.containers import Horizontal, Vertical, VerticalScroll
+from textual.css.query import NoMatches
 from textual.events import Mount
 from textual.message import Message
 from textual.reactive import reactive, var
@@ -425,7 +426,7 @@ class MarkdownOrderedList(MarkdownList):
 
     MarkdownOrderedList Vertical {
         height: auto;
-        width: 1fr;        
+        width: 1fr;
     }
     """
 
@@ -651,7 +652,10 @@ class MarkdownFence(MarkdownBlock):
             if self.app.current_theme.dark
             else self._markdown.code_light_theme
         )
-        self.get_child_by_type(Static).update(self._block())
+        try:
+            self.get_child_by_type(Static).update(self._block())
+        except NoMatches:
+            pass
 
     def compose(self) -> ComposeResult:
         yield Static(
